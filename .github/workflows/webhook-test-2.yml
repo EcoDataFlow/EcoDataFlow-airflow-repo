@@ -1,0 +1,19 @@
+name: Airflow Update Check
+
+on:
+  push:
+    paths:
+      - 'dags/**'
+      - 'requirements.txt'
+
+jobs:
+  update-airflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Webhook for DAG Update
+        if: contains(github.event.head_commit.modified, 'dags/')
+        run: curl -X POST http://your-vm-server/dag-update-webhook
+
+      - name: Trigger Webhook for Dependency Update
+        if: contains(github.event.head_commit.modified, 'requirements.txt')
+        run: curl -X POST http://your-vm-server/dependency-update-webhook
