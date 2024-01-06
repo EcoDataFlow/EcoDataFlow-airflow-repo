@@ -1,0 +1,11 @@
+[2024-01-06T10:06:16.982+0000] {processor.py:153} INFO - Started process (PID=9231) to work on /opt/airflow/dags/Learn_LatestOnlyOperator.py
+[2024-01-06T10:06:16.983+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/Learn_LatestOnlyOperator.py for tasks to queue
+[2024-01-06T10:06:16.983+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.983+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/Learn_LatestOnlyOperator.py
+[2024-01-06T10:06:16.993+0000] {processor.py:753} INFO - DAG(s) dict_keys(['Learn_LatestOnlyOperator']) retrieved from /opt/airflow/dags/Learn_LatestOnlyOperator.py
+[2024-01-06T10:06:17.041+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:17.041+0000] {manager.py:504} INFO - Created Permission View: can edit on DAG:Learn_LatestOnlyOperator
+[2024-01-06T10:06:17.045+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:17.045+0000] {manager.py:504} INFO - Created Permission View: can read on DAG:Learn_LatestOnlyOperator
+[2024-01-06T10:06:17.047+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:17.047+0000] {manager.py:504} INFO - Created Permission View: can delete on DAG:Learn_LatestOnlyOperator
+[2024-01-06T10:06:17.047+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:17.047+0000] {dag.py:2690} INFO - Sync 1 DAGs
+[2024-01-06T10:06:17.053+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:17.053+0000] {dag.py:2711} INFO - Creating ORM DAG for Learn_LatestOnlyOperator
+[2024-01-06T10:06:17.058+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:17.058+0000] {dag.py:3441} INFO - Setting next_dagrun for Learn_LatestOnlyOperator to 2023-06-14T00:00:00+00:00, run_after=2023-06-16T00:00:00+00:00
+[2024-01-06T10:06:17.065+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/Learn_LatestOnlyOperator.py took 0.085 seconds

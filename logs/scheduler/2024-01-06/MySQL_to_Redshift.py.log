@@ -1,0 +1,11 @@
+[2024-01-06T10:06:16.086+0000] {processor.py:153} INFO - Started process (PID=9227) to work on /opt/airflow/dags/MySQL_to_Redshift.py
+[2024-01-06T10:06:16.086+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/MySQL_to_Redshift.py for tasks to queue
+[2024-01-06T10:06:16.087+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.087+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/MySQL_to_Redshift.py
+[2024-01-06T10:06:16.792+0000] {processor.py:753} INFO - DAG(s) dict_keys(['MySQL_to_Redshift']) retrieved from /opt/airflow/dags/MySQL_to_Redshift.py
+[2024-01-06T10:06:16.841+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.841+0000] {manager.py:504} INFO - Created Permission View: can edit on DAG:MySQL_to_Redshift
+[2024-01-06T10:06:16.844+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.844+0000] {manager.py:504} INFO - Created Permission View: can read on DAG:MySQL_to_Redshift
+[2024-01-06T10:06:16.847+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.847+0000] {manager.py:504} INFO - Created Permission View: can delete on DAG:MySQL_to_Redshift
+[2024-01-06T10:06:16.847+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.847+0000] {dag.py:2690} INFO - Sync 1 DAGs
+[2024-01-06T10:06:16.853+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.853+0000] {dag.py:2711} INFO - Creating ORM DAG for MySQL_to_Redshift
+[2024-01-06T10:06:16.859+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.858+0000] {dag.py:3441} INFO - Setting next_dagrun for MySQL_to_Redshift to 2024-01-05T09:00:00+00:00, run_after=2024-01-06T09:00:00+00:00
+[2024-01-06T10:06:16.866+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/MySQL_to_Redshift.py took 0.782 seconds

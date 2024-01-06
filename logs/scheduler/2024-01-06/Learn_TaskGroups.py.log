@@ -1,0 +1,11 @@
+[2024-01-06T10:06:16.884+0000] {processor.py:153} INFO - Started process (PID=9229) to work on /opt/airflow/dags/Learn_TaskGroups.py
+[2024-01-06T10:06:16.885+0000] {processor.py:743} INFO - Processing file /opt/airflow/dags/Learn_TaskGroups.py for tasks to queue
+[2024-01-06T10:06:16.885+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.885+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/Learn_TaskGroups.py
+[2024-01-06T10:06:16.895+0000] {processor.py:753} INFO - DAG(s) dict_keys(['Learn_Task_Group']) retrieved from /opt/airflow/dags/Learn_TaskGroups.py
+[2024-01-06T10:06:16.945+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.945+0000] {manager.py:504} INFO - Created Permission View: can edit on DAG:Learn_Task_Group
+[2024-01-06T10:06:16.949+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.949+0000] {manager.py:504} INFO - Created Permission View: can read on DAG:Learn_Task_Group
+[2024-01-06T10:06:16.951+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.951+0000] {manager.py:504} INFO - Created Permission View: can delete on DAG:Learn_Task_Group
+[2024-01-06T10:06:16.952+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.952+0000] {dag.py:2690} INFO - Sync 1 DAGs
+[2024-01-06T10:06:16.957+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.957+0000] {dag.py:2711} INFO - Creating ORM DAG for Learn_Task_Group
+[2024-01-06T10:06:16.962+0000] {logging_mixin.py:137} INFO - [2024-01-06T10:06:16.962+0000] {dag.py:3441} INFO - Setting next_dagrun for Learn_Task_Group to 2024-01-04T00:00:00+00:00, run_after=2024-01-05T00:00:00+00:00
+[2024-01-06T10:06:16.969+0000] {processor.py:175} INFO - Processing /opt/airflow/dags/Learn_TaskGroups.py took 0.086 seconds
