@@ -9,13 +9,18 @@ dag = DAG(
     tags=['example'],
     schedule = '0 2 * * *')
 
+
+
 def print_hello():
     print("hello!")
     return "hello!"
 
+
 def print_goodbye():
+    
     print("goodbye!")
     return "goodbye!"
+
 
 print_hello = PythonOperator(
     task_id = 'print_hello',
