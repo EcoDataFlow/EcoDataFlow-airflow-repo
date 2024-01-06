@@ -6,7 +6,6 @@ from datetime import datetime
 def print_hello():
     print("hello!")
     return "hello!"
-
 @task
 def print_goodbye():
     print("goodbye!")
