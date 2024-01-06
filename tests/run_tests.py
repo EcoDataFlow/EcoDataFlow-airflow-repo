@@ -3,7 +3,7 @@ import sys
 
 
 def run_tests():
-    result = pytest.main(['test'])
+    result = pytest.main(['test_'])
     
     sys.exit(result)
 
