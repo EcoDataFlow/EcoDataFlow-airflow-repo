@@ -1,17 +1,36 @@
-import importlib
-import os
+import pytest
 
+import glob
+import importlib.util
+from airflow.models import DAG, Variable
+from airflow.utils.dag_cycle_tester import check_cycle
+from pathlib import Path
 
-def test_dag_integrity():
-    dag_directory = 'dags/'
+DIR = Path(__file__).parents[0]
+DAG_PATH = DIR / ".." / ".." / "dags/**.py"
+DAG_FILES = glob.glob(str(DAG_PATH))
 
-    dag_files = [os.path.join(dag_directory, file) for file in os.listdir(dag_directory) if file.endswith('.py')]
+def import_dag_files(dag_path, dag_file):
+    module_name = Path(dag_path).stem
+    module_path = dag_path / dag_file
+    mod_spec = importlib.util.spec_from_file_location(module_name, module_path)
+    module = importlib.util.module_from_spec(mod_spec)
+    mod_spec.loader.exec_module(module)
 
-    for dag_file in dag_files:
-        module_name = dag_file.replace('/', '.').replace('.py', '')
+    return module
 
-        try:
-            importlib.import_module(module_name)
-        
-        except ImportError as e:
-            assert False, f"ImportError in {dag_file}: {e}"
+@pytest.mark.parametrize("dag_file", DAG_FILES)
+def test_dag_integrity(airflow_variables, dag_file, monkeypatch):
+		# Airlfow variables monkey patch
+    def mock_get(*args, **kwargs):
+        mocked_dict = airflow_variables
+        return mocked_dict.get(args[0])
+
+    monkeypatch.setattr(Variable, "get", mock_get)
+
+    module = import_dag_files(DAG_PATH, dag_file)
+    dag_objects = [var for var in vars(module).values() if isinstance(var, DAG)]
+    assert dag_objects
+
+    for dag in dag_objects:
+        check_cycle(dag)
