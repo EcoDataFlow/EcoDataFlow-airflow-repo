@@ -12,7 +12,7 @@ def test_dependencies():
 
         for dependency in required_dependencies:
             try:
-                subprocess.run(['pip', 'show', dependency], check=True)
+                subprocess.run(['pip', 'show', dependency], check=True, capture_output=True, text=True)
                 assert True 
             except subprocess.CalledProcessError:
                 assert False, f"Dependency import failed: {dependency}"
