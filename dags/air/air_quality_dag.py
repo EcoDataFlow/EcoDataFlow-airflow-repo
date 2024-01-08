@@ -41,12 +41,14 @@ default_args = {
     "retries": 1,
 }
 
+
 dag = DAG(
     "upload_csv_to_gcs",
     default_args=default_args,
     catchup=False,
     schedule="@daily",
-)  # Or set your schedule
+    tags=["gcs"],
+)
 
 fetch_data_task = PythonOperator(
     task_id="fetch_data_and_save_csv_task",
