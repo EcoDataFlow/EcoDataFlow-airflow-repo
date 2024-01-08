@@ -6,6 +6,7 @@ from airflow.providers.google.cloud.transfers.local_to_gcs import (
 )
 import requests
 import pandas as pd
+import os
 
 
 def fetch_data_and_save_csv():
@@ -22,7 +23,16 @@ def fetch_data_and_save_csv():
     response = requests.get(url, params=params)
     json_data = response.json()["response"]["body"]["items"]
     df = pd.DataFrame(json_data)
-    df.to_csv("dags/output.csv", index=False)
+    df.to_csv("dags/air/output.csv", index=False)
+
+
+# Function to delete the CSV file
+def delete_csv_file():
+    file_path = "dags/air/output.csv"
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    else:
+        print(f"The file {file_path} does not exist.")
 
 
 default_args = {
@@ -30,6 +40,7 @@ default_args = {
     "start_date": datetime(2024, 1, 1),
     "retries": 1,
 }
+
 dag = DAG(
     "upload_csv_to_gcs",
     default_args=default_args,
@@ -42,12 +53,20 @@ fetch_data_task = PythonOperator(
     python_callable=fetch_data_and_save_csv,
     dag=dag,
 )
+
 upload_operator = LocalFilesystemToGCSOperator(
     task_id="upload_csv_to_gcs_task",
-    src="dags/output.csv",
-    dst="output.csv",
+    src="dags/air/output.csv",
+    dst="air/{{ ds }}.csv",
     bucket="data-lake-storage",
     gcp_conn_id="google_cloud_conn_id",  # The Conn Id from the Airflow connection setup
     dag=dag,
 )
-fetch_data_task >> upload_operator
+
+delete_file_task = PythonOperator(
+    task_id="delete_csv_file_task",
+    python_callable=delete_csv_file,
+    dag=dag,
+)
+
+fetch_data_task >> upload_operator >> delete_file_task
