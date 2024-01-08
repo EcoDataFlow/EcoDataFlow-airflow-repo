@@ -13,7 +13,7 @@ dag = DAG(
     default_args=default_args,
     catchup=False,
     schedule="@monthly",
-)  
+)
 
 download_file = GCSToLocalFilesystemOperator(
     task_id="download_file",

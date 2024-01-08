@@ -4,7 +4,6 @@ import pandas as pd
 from io import StringIO
 import xml.etree.ElementTree as ET
 import requests
-import pandas as pd
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
@@ -40,9 +39,9 @@ def process_data(**kwargs):
     for year in range(2023, 2024):
         for month in range(9, 10):
             for code in region_codes.법정동코드:
-                params = {'serviceKey' : 'IfMicP9ax2V2RmsEiy8nE8UW0OuO4zyv/DINJE/x6H5FVPTFKAFjM5scKDPGlgu9m05/ygawZ9h3egOzpH7usw==', 'sigunguCode' : code, 'searchDate' : f'{year}{month:02d}' }
-                response = requests.get(url, params = params)
-                
+                params = {'serviceKey': 'IfMicP9ax2V2RmsEiy8nE8UW0OuO4zyv/DINJE/x6H5FVPTFKAFjM5scKDPGlgu9m05/ygawZ9h3egOzpH7usw==', 'sigunguCode': code, 'searchDate': f'{year}{month:02d}'}
+                response = requests.get(url, params=params)
+
                 # XML 응답 파싱
                 root = ET.fromstring(response.content)
                 for item in root.findall('.//item'):
@@ -59,7 +58,7 @@ def process_data(**kwargs):
                         'heat': heat,
                         'water_cool': water_cool,
                         'water_hot': water_hot
-                        }])
+                    }])
                     energy_consumption_bill = pd.concat([energy_consumption_bill, temp_df], ignore_index=True)
     print(energy_consumption_bill)
 
@@ -78,7 +77,7 @@ dag = DAG(
     default_args=default_args,
     catchup=False,
     schedule="@monthly",
-)  
+)
 
 read_csv_task = PythonOperator(
     task_id='read_csv_from_gcs',
