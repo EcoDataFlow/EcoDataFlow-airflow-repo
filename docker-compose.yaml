@@ -127,8 +127,6 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-    volumes:
-      - ./data:/opt/airflow/data
 
   airflow-scheduler:
     <<: *airflow-common
