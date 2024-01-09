@@ -7,6 +7,8 @@ import requests
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 
 
 def read_csv_from_gcs():
@@ -30,8 +32,6 @@ def read_csv_from_gcs():
 
 
 def process_data(**kwargs):
-    # current_year = datetime.now().year
-    # current_month = datetime.now().month
 
     # XCom을 통해 데이터 가져오기
     file_path = kwargs['ti'].xcom_pull(task_ids='read_csv_from_gcs')
@@ -41,8 +41,6 @@ def process_data(**kwargs):
     url = 'http://apis.data.go.kr/1611000/ApHusEnergyUseInfoOfferService/getSignguAvrgEnergyUseAmountInfoSearch'
     for year in range(2023, 2024):
         for month in range(1, 13):
-            # if year == current_year and month > current_month:
-            #    break
 
             for code in region_codes.법정동코드:
                 params = {'serviceKey': 'IfMicP9ax2V2RmsEiy8nE8UW0OuO4zyv/DINJE/x6H5FVPTFKAFjM5scKDPGlgu9m05/ygawZ9h3egOzpH7usw==', 'sigunguCode': code, 'searchDate': f'{year}{month:02d}'}
@@ -66,8 +64,8 @@ def process_data(**kwargs):
                         'water_hot': water_hot
                     }])
                     energy_consumption_bill = pd.concat([energy_consumption_bill, temp_df], ignore_index=True)
+            print("checkpoint", year, month)
     print(energy_consumption_bill)
-
     energy_consumption_bill.to_csv("dags/data/energy_consumption_bill.csv", index=False)
     return "dags/data/energy_consumption_bill.csv"
 
@@ -79,26 +77,26 @@ default_args = {
 }
 
 dag = DAG(
-    "energy_consumption_bill",
+    "energy_consumption_bill_etl",
     default_args=default_args,
     catchup=False,
     schedule="@monthly",
 )
 
-read_csv_task = PythonOperator(
+read_csv = PythonOperator(
     task_id='read_csv_from_gcs',
     python_callable=read_csv_from_gcs,
     dag=dag,
 )
 
-process_data_task = PythonOperator(
+process_data = PythonOperator(
     task_id='process_data',
     python_callable=process_data,
     provide_context=True,
     dag=dag,
 )
 
-upload_operator = LocalFilesystemToGCSOperator(
+upload_to_gcs = LocalFilesystemToGCSOperator(
     task_id="upload_csv_to_gcs_task",
     src="dags/data/energy_consumption_bill.csv",
     dst="energy/consumption/energy_consumption_bill.csv",
@@ -107,4 +105,37 @@ upload_operator = LocalFilesystemToGCSOperator(
     dag=dag,
 )
 
-read_csv_task >> process_data_task >> upload_operator
+create_table_if_not_exist = BigQueryInsertJobOperator(
+    task_id="create_table",
+    configuration={
+        "query": {
+            "query": """
+            CREATE TABLE IF NOT EXISTS raw_data.energy_consumption_bill (
+                year_month STRING,
+                district_code INT64,
+                electricity INT64,
+                heat INT64,
+                water_cool INT64,
+                water_hot INT64
+            )
+            """,
+            "useLegacySql": False,
+        }
+    },
+    gcp_conn_id="google_cloud_conn_id",
+    dag=dag,
+)
+
+gcs_to_bigquery = GCSToBigQueryOperator(
+    task_id="gcs_to_bigquery",
+    bucket="data-lake-storage",
+    source_objects="energy/consumption/energy_consumption_bill.csv",
+    destination_project_dataset_table="focus-empire-410115.raw_data.energy_consumption_bill",
+    autodetect=True,
+    write_disposition="WRITE_TRUNCATE",
+    gcp_conn_id="google_cloud_conn_id",
+    dag=dag,
+)
+
+read_csv >> process_data >> upload_to_gcs
+upload_to_gcs >> create_table_if_not_exist >> gcs_to_bigquery

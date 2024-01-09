@@ -53,7 +53,7 @@ default_args = {
 }
 
 dag = DAG(
-    "electricity_consumption",
+    "electricity_consumption_etl",
     default_args=default_args,
     catchup=False,
     schedule="@monthly",
