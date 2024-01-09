@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import (
     LocalFilesystemToGCSOperator,
@@ -11,14 +12,13 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 import requests
 import pandas as pd
 import os
-import pytz
 import pendulum
 
 
-def fetch_data_and_save_csv(execution_date):
+def fetch_data_and_save_csv(**context):
     # Convert UTC to Korea Timezone
-    korea_tz = pendulum.timezone("Asia/Seoul")
-    current_datetime = execution_date.astimezone(korea_tz)
+    utc_datetime = context["logical_date"]
+    current_datetime = pendulum.instance(utc_datetime).in_tz("Asia/Seoul")
     current_date = current_datetime.strftime("%Y-%m-%d")
     current_time = current_datetime.strftime("%H")
 
@@ -43,6 +43,9 @@ def fetch_data_and_save_csv(execution_date):
     json_data = response.json()["response"]["body"]["items"]["item"]
     df = pd.DataFrame(json_data)
     df.to_csv("dags/water/output.csv", index=False)
+
+    formatted_path = f"water/hourly/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
+    Variable.set("gcs_file_path", formatted_path)
 
 
 # Function to delete the CSV file
@@ -73,14 +76,15 @@ dag = DAG(
 fetch_data_task = PythonOperator(
     task_id="fetch_data_and_save_csv_task",
     python_callable=fetch_data_and_save_csv,
-    op_kwargs={"execution_date": "{{ execution_date }}"},
+    provide_context=True,
     dag=dag,
 )
+
 
 upload_operator = LocalFilesystemToGCSOperator(
     task_id="upload_csv_to_gcs_task",
     src="dags/water/output.csv",
-    dst="water/hourly/{{ execution_date.strftime('%Y-%m-%d_%H') }}.csv",
+    dst="{{ var.value.gcs_file_path }}",
     bucket="data-lake-storage",
     gcp_conn_id="google_cloud_conn_id",  # The Conn Id from the Airflow connection setup
     dag=dag,
@@ -95,7 +99,7 @@ delete_file_task = PythonOperator(
 load_csv_to_bq_task = GCSToBigQueryOperator(
     task_id="gcs_to_bigquery_task",
     bucket="data-lake-storage",
-    source_objects=["water/hourly/{{ execution_date.strftime('%Y-%m-%d_%H') }}.csv"],
+    source_objects=["{{ var.value.gcs_file_path }}"],
     destination_project_dataset_table="focus-empire-410115.raw_data.hourly_water_pollutants_tmp",
     autodetect=True,
     write_disposition="WRITE_TRUNCATE",
