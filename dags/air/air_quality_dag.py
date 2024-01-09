@@ -119,9 +119,6 @@ execute_query_upsert = BigQueryInsertJobOperator(
 
 fetch_data_task >> upload_operator >> delete_file_task
 
-(
-    upload_operator
-    >> load_csv_to_bq_task
-    >> create_table_if_not_exist
-    >> execute_query_upsert
-)
+upload_operator >> load_csv_to_bq_task
+
+load_csv_to_bq_task >> create_table_if_not_exist >> execute_query_upsert
