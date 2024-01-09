@@ -48,7 +48,7 @@ default_args = {
 
 
 dag = DAG(
-    "upload_csv_to_gcs",
+    "air_quality_etl",
     default_args=default_args,
     catchup=False,
     schedule="30 * * * *",
