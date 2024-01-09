@@ -17,7 +17,7 @@ import pendulum
 
 def fetch_data_and_save_csv(**context):
     # Convert UTC to Korea Timezone
-    utc_datetime = context["logical_date"]
+    utc_datetime = context["data_interval_end"]
     current_datetime = pendulum.instance(utc_datetime).in_tz("Asia/Seoul")
     current_date = current_datetime.strftime("%Y-%m-%d")
     current_time = current_datetime.strftime("%H")
@@ -38,7 +38,8 @@ def fetch_data_and_save_csv(**context):
         "numOfRows": "100",
         "pageNo": "1",
     }
-    print(current_time)
+
+    print(current_datetime)
     response = requests.get(url, params=params)
     json_data = response.json()["response"]["body"]["items"]["item"]
     df = pd.DataFrame(json_data)
