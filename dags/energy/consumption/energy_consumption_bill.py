@@ -30,6 +30,9 @@ def read_csv_from_gcs():
 
 
 def process_data(**kwargs):
+    # current_year = datetime.now().year
+    # current_month = datetime.now().month
+
     # XCom을 통해 데이터 가져오기
     file_path = kwargs['ti'].xcom_pull(task_ids='read_csv_from_gcs')
     region_codes = pd.read_csv(file_path)
@@ -37,7 +40,10 @@ def process_data(**kwargs):
     energy_consumption_bill = pd.DataFrame(columns=['year_month', 'district_code', 'electricity', 'heat', 'water_cool', 'water_hot'])
     url = 'http://apis.data.go.kr/1611000/ApHusEnergyUseInfoOfferService/getSignguAvrgEnergyUseAmountInfoSearch'
     for year in range(2023, 2024):
-        for month in range(9, 10):
+        for month in range(1, 13):
+            # if year == current_year and month > current_month:
+            #    break
+
             for code in region_codes.법정동코드:
                 params = {'serviceKey': 'IfMicP9ax2V2RmsEiy8nE8UW0OuO4zyv/DINJE/x6H5FVPTFKAFjM5scKDPGlgu9m05/ygawZ9h3egOzpH7usw==', 'sigunguCode': code, 'searchDate': f'{year}{month:02d}'}
                 response = requests.get(url, params=params)

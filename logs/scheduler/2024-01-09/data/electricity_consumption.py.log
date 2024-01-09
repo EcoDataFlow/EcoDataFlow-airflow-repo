@@ -1,0 +1,7 @@
+[2024-01-09T12:57:04.006+0000] {processor.py:161} INFO - Started process (PID=638) to work on /opt/airflow/dags/data/electricity_consumption.py
+[2024-01-09T12:57:04.024+0000] {processor.py:830} INFO - Processing file /opt/airflow/dags/data/electricity_consumption.py for tasks to queue
+[2024-01-09T12:57:04.030+0000] {logging_mixin.py:188} INFO - [2024-01-09T12:57:04.029+0000] {dagbag.py:538} INFO - Filling up the DagBag from /opt/airflow/dags/data/electricity_consumption.py
+[2024-01-09T12:57:04.247+0000] {processor.py:840} INFO - DAG(s) 'electricity_consumption' retrieved from /opt/airflow/dags/data/electricity_consumption.py
+[2024-01-09T12:57:04.298+0000] {logging_mixin.py:188} INFO - [2024-01-09T12:57:04.295+0000] {dag.py:3033} INFO - Sync 1 DAGs
+[2024-01-09T12:57:04.453+0000] {logging_mixin.py:188} INFO - [2024-01-09T12:57:04.450+0000] {dag.py:3820} INFO - Setting next_dagrun for electricity_consumption to 2024-01-01T00:00:00+00:00, run_after=2024-02-01T00:00:00+00:00
+[2024-01-09T12:57:04.622+0000] {processor.py:183} INFO - Processing /opt/airflow/dags/data/electricity_consumption.py took 0.629 seconds
