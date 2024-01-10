@@ -15,7 +15,7 @@ BUCKET_NAME = "data-lake-storage"
 
 def get_data():
     today = datetime.now()
-    get_date = today - timedelta(days=26)
+    get_date = today - timedelta(days=27)
     url = "http://apis.data.go.kr/B552115/PvAmountByLocHr/getPvAmountByLocHr"
     api_key = "9IyndkiMrrzo5eLkP+I/sKhMYeg0jb8hNwqpdPHdeRKS5WuCsdT/bA8urOBesACx9E9cmdhLVs9sDvAFiyVlsA=="
     csv_filename = "solar_energy_generation.csv"
@@ -34,7 +34,7 @@ def get_data():
     df.to_csv("dags/energy/generation/" + csv_filename, index=False)
 
 
-def add_region_code():
+def csv_transform_region_code():
     # 현재 실행되는 파일의 경로
     current_directory = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(current_directory, "solar_energy_generation.csv")
@@ -68,11 +68,36 @@ def add_region_code():
     df.to_csv(output_path, index=False)
 
 
+def csv_transform_datetime():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_directory, "solar_energy_generation.csv")
+    df = pd.read_csv(file_path)
+    df = df.drop(columns=["rn"])
+
+    df["tradeNo"] = df["tradeNo"].apply(lambda x: f"{x % 24:02d}:00:00")
+    df["tradeNo"] = pd.to_datetime(df["tradeNo"]).dt.strftime("%H:%M:%S").astype(str)
+    df["tradeYmd"] = pd.to_datetime(df["tradeYmd"], format="%Y%m%d").dt.strftime(
+        "%Y-%m-%d"
+    )
+    df = df.rename(
+        columns={
+            "tradeNo": "hour",
+            "tradeYmd": "date",
+            "regionNm": "region_name",
+            "amgo": "amgo",
+            "regionCode": "region_code",
+        }
+    )
+
+    output_path = os.path.join(current_directory, "solar_energy_generation.csv")
+    df.to_csv(output_path, index=False)
+
+
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2023, 10, 1),
     "retries": 5,
-    "retry_delay": timedelta(minutes=1),
+    "retry_delay": timedelta(minutes=3),
 }
 
 
@@ -80,12 +105,15 @@ dag = DAG(
     "csv_to_gcs_to_bigquery",
     default_args=default_args,
     description="csv->gcs->bigquery",
-    schedule_interval="@daily",  # Adjust as needed
+    schedule_interval="@daily",
     catchup=False,
 )
 
 
-start_task = DummyOperator(task_id="start_task", dag=dag)
+start_task = DummyOperator(
+    task_id="start_task",
+    dag=dag,
+)
 
 
 api_to_csv = PythonOperator(
@@ -95,9 +123,16 @@ api_to_csv = PythonOperator(
 )
 
 
-add_region_code_to_csv = PythonOperator(
-    task_id="add_region_code_to_csv",
-    python_callable=add_region_code,
+csv_transform_region_code_task = PythonOperator(
+    task_id="csv_transform_region_code_task",
+    python_callable=csv_transform_region_code,
+    dag=dag,
+)
+
+
+csv_transform_datetime_task = PythonOperator(
+    task_id="csv_transform_datetime_task",
+    python_callable=csv_transform_datetime,
     dag=dag,
 )
 
@@ -118,14 +153,23 @@ gcs_to_bigquery = GCSToBigQueryOperator(
     source_objects=["energy/generation/solar_energy_generation.csv"],
     destination_project_dataset_table="focus-empire-410115.raw_data.solar_energy",
     source_format="CSV",
-    autodetect=True,
+    autodetect=False,
     skip_leading_rows=1,
+    schema_fields=[
+        {"name": "hour", "type": "TIME"},
+        {"name": "date", "type": "DATETIME"},
+        {"name": "region_name", "type": "STRING"},
+        {"name": "amgo", "type": "FLOAT"},
+        {"name": "region_code", "type": "INTEGER"},
+    ],
     write_disposition="WRITE_APPEND",
     gcp_conn_id="google_cloud_conn_id",
     dag=dag,
 )
 
 
-start_task >> api_to_csv >> add_region_code_to_csv
+start_task >> api_to_csv >> csv_transform_region_code_task
 
-add_region_code_to_csv >> upload_csv_to_gcs >> gcs_to_bigquery
+csv_transform_region_code_task >> csv_transform_datetime_task >> upload_csv_to_gcs
+
+upload_csv_to_gcs >> gcs_to_bigquery
