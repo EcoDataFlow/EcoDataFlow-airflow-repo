@@ -17,7 +17,7 @@ def get_data():
     today = datetime.now()
     get_date = today - timedelta(days=27)
     url = "http://apis.data.go.kr/B552115/PvAmountByLocHr/getPvAmountByLocHr"
-    api_key = "9IyndkiMrrzo5eLkP+I/sKhMYeg0jb8hNwqpdPHdeRKS5WuCsdT/bA8urOBesACx9E9cmdhLVs9sDvAFiyVlsA=="
+    api_key = "d/SBgSmKAPxYCabQdjHocN4zvsxvdlL0w15/WgLq8DEjamKHBR7tdh0IbgNBsPvHfBBp+2LPyxtg6freIqxy1g=="
     csv_filename = "solar_energy_generation.csv"
     start_date = get_date.strftime("%Y%m%d")
 
@@ -41,7 +41,6 @@ def csv_transform_region_code():
 
     df = pd.read_csv(file_path)
 
-    # regionNm 정보를 기반으로 법정동 코드 매칭
     region_to_code = {
         "강원도": 42000,
         "경기도": 41000,
@@ -64,6 +63,27 @@ def csv_transform_region_code():
     df["regionCode"] = df["regionNm"].map(region_to_code)
     df["regionCode"] = df["regionCode"].astype(int)
 
+    metro = {
+        "서울시": "서울특별시",
+        "부산시": "부산광역시",
+        "대구시": "대구광역시",
+        "인천시": "인천광역시",
+        "광주시": "광주광역시",
+        "대전시": "대전광역시",
+        "울산시": "울산광역시",
+        "경기도": "경기도",
+        "강원도": "강원특별자치도",
+        "충청북도": "충청북도",
+        "충청남도": "충청남도",
+        "전라북도": "전라북도",
+        "전라남도": "전라남도",
+        "경상북도": "경상북도",
+        "경상남도": "경상남도",
+        "제주도": "제주특별자치도",
+        "세종시": "세종특별자치시",
+    }
+    df["regionNm"] = df["regionNm"].map(metro)
+
     output_path = os.path.join(current_directory, "solar_energy_generation.csv")
     df.to_csv(output_path, index=False)
 
@@ -83,7 +103,7 @@ def csv_transform_datetime():
         columns={
             "tradeNo": "hour",
             "tradeYmd": "date",
-            "regionNm": "region_name",
+            "regionNm": "metro",
             "amgo": "amgo",
             "regionCode": "region_code",
         }
@@ -158,7 +178,7 @@ gcs_to_bigquery = GCSToBigQueryOperator(
     schema_fields=[
         {"name": "hour", "type": "TIME"},
         {"name": "date", "type": "DATETIME"},
-        {"name": "region_name", "type": "STRING"},
+        {"name": "metro", "type": "STRING"},
         {"name": "amgo", "type": "FLOAT"},
         {"name": "region_code", "type": "INTEGER"},
     ],
@@ -166,7 +186,6 @@ gcs_to_bigquery = GCSToBigQueryOperator(
     gcp_conn_id="google_cloud_conn_id",
     dag=dag,
 )
-
 
 start_task >> api_to_csv >> csv_transform_region_code_task
 
