@@ -16,6 +16,12 @@ import pendulum
 
 
 def fetch_data_and_save_csv(**context):
+    utc_datetime = context["data_interval_end"]
+    current_datetime = pendulum.instance(utc_datetime).in_tz("Asia/Seoul")
+    print(current_datetime)
+    formatted_path = f"air/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
+    Variable.set("aqi_gcs_file_path", formatted_path)
+
     url = "http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty"
     params = {
         "serviceKey": "9IyndkiMrrzo5eLkP+I/sKhMYeg0jb8hNwqpdPHdeRKS5WuCsdT/bA8urOBesACx9E9cmdhLVs9sDvAFiyVlsA==",
@@ -87,11 +93,6 @@ def fetch_data_and_save_csv(**context):
     # convert to csv
     df_selected.to_csv("dags/air/output.csv", index=False)
 
-    utc_datetime = context["data_interval_end"]
-    current_datetime = pendulum.instance(utc_datetime).in_tz("Asia/Seoul")
-    formatted_path = f"air/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
-    Variable.set("aqi_gcs_file_path", formatted_path)
-
 
 # Function to delete the CSV file
 def delete_csv_file():
@@ -105,12 +106,12 @@ def delete_csv_file():
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2024, 1, 1),
-    "retries": 1,
+    "retries": 3,
 }
 
 
 dag = DAG(
-    "upload_csv_to_gcs",
+    "air_quality_etl",
     default_args=default_args,
     catchup=False,
     schedule="30 * * * *",
