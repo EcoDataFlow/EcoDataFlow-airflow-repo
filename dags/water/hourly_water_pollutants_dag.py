@@ -43,7 +43,34 @@ def fetch_data_and_save_csv(**context):
     response = requests.get(url, params=params)
     json_data = response.json()["response"]["body"]["items"]["item"]
     df = pd.DataFrame(json_data)
-    df.to_csv("dags/water/output.csv", index=False)
+
+    # select columns
+    df_selected = df[
+        [
+            "occrrncDt",
+            "fcltyAddr",
+            "fcltyMngNm",
+            "fcltyMngNo",
+            "clVal",
+            "phVal",
+            "tbVal",
+        ]
+    ]
+    # rename columns
+    new_column_names = {
+        "occrrncDt": "datetime",
+        "fcltyAddr": "facultyAddr",
+        "fcltyMngNm": "facultyName",
+        "fcltyMngNo": "facultyCode",
+        "clVal": "cl",
+        "phVal": "pH",
+        "tbVal": "tb",
+    }
+
+    df_selected.rename(columns=new_column_names, inplace=True)
+
+    # convert to csv
+    df_selected.to_csv("dags/water/output.csv", index=False)
 
     formatted_path = f"water/hourly/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
     Variable.set("gcs_file_path", formatted_path)
@@ -127,7 +154,7 @@ execute_query_upsert = BigQueryInsertJobOperator(
         "query": {
             "query": """MERGE raw_data.hourly_water_pollutants A
             USING raw_data.hourly_water_pollutants_tmp T
-            ON A.occrrncDt = T.occrrncDt and A.fcltyMngNo = T.fcltyMngNo
+            ON A.datetime = T.datetime and A.facultyCode = T.facultyCode
             WHEN NOT MATCHED THEN
                 INSERT ROW""",
             "useLegacySql": False,
