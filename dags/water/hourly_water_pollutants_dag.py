@@ -15,6 +15,11 @@ import os
 import pendulum
 
 
+def convert_date_format(date_str):
+    datetime_obj = datetime.strptime(str(date_str), "%Y%m%d%H")
+    return datetime_obj.strftime("%Y-%m-%d %H:%M")
+
+
 def fetch_data_and_save_csv(**context):
     # Convert UTC to Korea Timezone
     utc_datetime = context["data_interval_end"]
@@ -69,6 +74,11 @@ def fetch_data_and_save_csv(**context):
 
     df_selected.rename(columns=new_column_names, inplace=True)
 
+    # change value ('점검중' 등 null로 변경해야 하는 값)
+    for col_name in ["cl", "pH", "tb"]:
+        df_selected.loc[df_selected[col_name] == "점검중", col_name] = ""
+
+    df_selected["datetime"] = df_selected["datetime"].apply(convert_date_format)
     # convert to csv
     df_selected.to_csv("dags/water/output.csv", index=False)
 
