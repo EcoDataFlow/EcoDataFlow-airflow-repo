@@ -22,13 +22,69 @@ def fetch_data_and_save_csv():
         "numOfRows": "1000",
         "pageNo": "1",
         "sidoName": "전국",
-        "ver": "1.0",
+        "ver": "1.5",
     }
 
     response = requests.get(url, params=params)
     json_data = response.json()["response"]["body"]["items"]
+
     df = pd.DataFrame(json_data)
-    df.to_csv("dags/air/output.csv", index=False)
+
+    # select columns
+    df_selected = df[
+        [
+            "dataTime",
+            "sidoName",
+            "stationName",
+            "stationCode",
+            "so2Value",
+            "coValue",
+            "o3Value",
+            "no2Value",
+            "pm10Value",
+            "pm25Value",
+        ]
+    ]
+    # rename columns
+
+    new_column_names = {
+        "dataTime": "datetime",
+        "sidoName": "metro",
+        "so2Value": "so2",
+        "coValue": "co",
+        "o3Value": "o3",
+        "no2Value": "no2",
+        "pm10Value": "pm10",
+        "pm25Value": "pm25",
+    }
+
+    df_selected.rename(columns=new_column_names, inplace=True)
+
+    # modify value to official name of city
+
+    new_metro_values = {
+        "서울": "서울특별시",
+        "부산": "부산광역시",
+        "대구": "대구광역시",
+        "인천": "인천광역시",
+        "광주": "광주광역시",
+        "대전": "대전광역시",
+        "울산": "울산광역시",
+        "경기": "경기도",
+        "강원": "강원특별자치도",
+        "충북": "충청북도",
+        "충남": "충청남도",
+        "전북": "전라북도",
+        "전남": "전라남도",
+        "경북": "경상북도",
+        "경남": "경상남도",
+        "제주": "제주특별자치도",
+        "세종": "세종특별자치시",
+    }
+    df_selected["metro"] = df_selected["metro"].map(new_metro_values)
+
+    # convert to csv
+    df_selected.to_csv("dags/air/output.csv", index=False)
 
 
 # Function to delete the CSV file
@@ -106,7 +162,7 @@ execute_query_upsert = BigQueryInsertJobOperator(
         "query": {
             "query": """MERGE raw_data.air_quality A
             USING raw_data.air_quality_tmp T
-            ON A.dataTime = T.dataTime and A.sidoName = T.sidoName
+            ON A.datetime = T.datetime and A.stationCode = T.stationCode
             WHEN NOT MATCHED THEN
                 INSERT ROW""",
             "useLegacySql": False,
