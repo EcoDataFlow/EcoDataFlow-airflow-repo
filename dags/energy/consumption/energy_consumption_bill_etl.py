@@ -51,7 +51,7 @@ def process_data(**kwargs):
                     response.raise_for_status()  # 응답 상태 확인
 
                     if response.headers['Content-Type'] != 'application/xml':
-                        print('year, month, code, 응답이 XML 형식이 아닙니다.')
+                        print(year, month, code, '응답이 XML 형식이 아닙니다.')
                         continue  # XML이 아니면 건너뛰기
 
                     # XML 응답 파싱
