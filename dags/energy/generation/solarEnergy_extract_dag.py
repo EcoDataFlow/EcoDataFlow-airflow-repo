@@ -9,35 +9,45 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
     GCSToBigQueryOperator,
 )
 from airflow.operators.python_operator import PythonOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 
 BUCKET_NAME = "data-lake-storage"
 
 
-def get_data():
-    today = datetime.now()
-    get_date = today - timedelta(days=27)
+def get_formatted_execution_date(**kwargs):
+    return (kwargs["execution_date"] - timedelta(days=28)).strftime("%Y%m%d")
+
+
+def get_data(**kwargs):
+    execution_date = get_formatted_execution_date(**kwargs)
     url = "http://apis.data.go.kr/B552115/PvAmountByLocHr/getPvAmountByLocHr"
     api_key = "d/SBgSmKAPxYCabQdjHocN4zvsxvdlL0w15/WgLq8DEjamKHBR7tdh0IbgNBsPvHfBBp+2LPyxtg6freIqxy1g=="
-    csv_filename = "solar_energy_generation.csv"
-    start_date = get_date.strftime("%Y%m%d")
 
     params = {
         "serviceKey": api_key,
         "pageNo": 1,
         "numOfRows": 408,
         "dataType": "json",
-        "tradeYmd": start_date,
+        "tradeYmd": execution_date,
     }
+
     response = requests.get(url, params=params)
     items = response.json()["response"]["body"]["items"]["item"]
+    csv_filename = f"solar_energy_generation_{execution_date}.csv"
+
+    if not response.json():
+        dag.pause()
+
     df = pd.DataFrame(items)
     df.to_csv("dags/energy/generation/" + csv_filename, index=False)
 
 
-def csv_transform_region_code():
+def csv_transform_region_code(**kwargs):
     # 현재 실행되는 파일의 경로
+    execution_date = get_formatted_execution_date(**kwargs)
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_directory, "solar_energy_generation.csv")
+    file_name = f"solar_energy_generation_{execution_date}.csv"
+    file_path = os.path.join(current_directory, file_name)
 
     df = pd.read_csv(file_path)
 
@@ -84,13 +94,15 @@ def csv_transform_region_code():
     }
     df["regionNm"] = df["regionNm"].map(metro)
 
-    output_path = os.path.join(current_directory, "solar_energy_generation.csv")
+    output_path = os.path.join(current_directory, file_name)
     df.to_csv(output_path, index=False)
 
 
-def csv_transform_datetime():
+def csv_transform_datetime(**kwargs):
+    execution_date = get_formatted_execution_date(**kwargs)
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_directory, "solar_energy_generation.csv")
+    file_name = f"solar_energy_generation_{execution_date}.csv"
+    file_path = os.path.join(current_directory, file_name)
     df = pd.read_csv(file_path)
     df = df.drop(columns=["rn"])
 
@@ -109,30 +121,24 @@ def csv_transform_datetime():
         }
     )
 
-    output_path = os.path.join(current_directory, "solar_energy_generation.csv")
+    output_path = os.path.join(current_directory, file_name)
     df.to_csv(output_path, index=False)
 
 
 default_args = {
     "owner": "airflow",
-    "start_date": datetime(2023, 10, 1),
+    "start_date": datetime(2023, 12, 15),
     "retries": 5,
     "retry_delay": timedelta(minutes=3),
 }
 
 
 dag = DAG(
-    "csv_to_gcs_to_bigquery",
+    dag_id="api_data_extract",
     default_args=default_args,
-    description="csv->gcs->bigquery",
+    description="api_data_extract",
     schedule_interval="@daily",
     catchup=False,
-)
-
-
-start_task = DummyOperator(
-    task_id="start_task",
-    dag=dag,
 )
 
 
@@ -157,38 +163,4 @@ csv_transform_datetime_task = PythonOperator(
 )
 
 
-upload_csv_to_gcs = LocalFilesystemToGCSOperator(
-    task_id="upload_csv_to_gcs",
-    src="dags/energy/generation/solar_energy_generation.csv",
-    dst="energy/generation/solar_energy_generation.csv",
-    bucket=BUCKET_NAME,
-    gcp_conn_id="google_cloud_conn_id",
-    dag=dag,
-)
-
-
-gcs_to_bigquery = GCSToBigQueryOperator(
-    task_id="gcs_to_bigquery",
-    bucket=BUCKET_NAME,
-    source_objects=["energy/generation/solar_energy_generation.csv"],
-    destination_project_dataset_table="focus-empire-410115.raw_data.solar_energy",
-    source_format="CSV",
-    autodetect=False,
-    skip_leading_rows=1,
-    schema_fields=[
-        {"name": "hour", "type": "TIME"},
-        {"name": "date", "type": "DATETIME"},
-        {"name": "metro", "type": "STRING"},
-        {"name": "amgo", "type": "FLOAT"},
-        {"name": "region_code", "type": "INTEGER"},
-    ],
-    write_disposition="WRITE_APPEND",
-    gcp_conn_id="google_cloud_conn_id",
-    dag=dag,
-)
-
-start_task >> api_to_csv >> csv_transform_region_code_task
-
-csv_transform_region_code_task >> csv_transform_datetime_task >> upload_csv_to_gcs
-
-upload_csv_to_gcs >> gcs_to_bigquery
+api_to_csv >> csv_transform_region_code_task >> csv_transform_datetime_task
