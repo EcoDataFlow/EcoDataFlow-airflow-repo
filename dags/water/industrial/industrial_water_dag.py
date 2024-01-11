@@ -9,7 +9,6 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 import requests, pendulum, os
 import pandas as pd
 
-
 # 1. default
 default_args = {
     "owner": "airflow",
@@ -35,9 +34,12 @@ def convert_df_to_csv(daily_industrial_water_qual):
         daily_industrial_water_qual.pop("item6")
         daily_industrial_water_qual.pop("item8")
         daily_industrial_water_qual.pop("item10")
-        daily_industrial_water_qual.rename(columns={"item1":"temperature", "item3":"pH", "item5":"NTU", "item7":"electrical_conductivity", "item9":"alkalinity"}, inplace=True)
+        daily_industrial_water_qual.rename(
+            columns={"item1": "temperature", "item3": "pH", "item5": "NTU", "item7": "electrical_conductivity",
+                     "item9": "alkalinity"}, inplace=True)
         # daily_industrial_water_qual.to_csv("/Users/wonkyungkim/Documents/pythondev/EcoDataFlow-airflow-repo/dags/data/industrial_water/output.csv", index=False)  # for local unit test
         daily_industrial_water_qual.to_csv("dags/data/industrial_water/output.csv", index=False, encoding='utf-8')
+
 
 # def preprocess_then_append_to_initial_df(initial_df, operand_df):
 #     pass
@@ -73,19 +75,20 @@ def get_industrial_water_quality_infos(**context):
                 num_of_pages = response["totalCount"] // response["numOfRows"] + 1
                 before = pd.DataFrame(response["items"]["item"])
                 new_columns = before.columns.to_list()
-                new_columns.extend(["fltplt", "fltpltnm", "address","add_code"])
+                new_columns.extend(["fltplt", "fltpltnm", "address", "add_code"])
                 daily_industrial_water_qual = pd.DataFrame(before, columns=new_columns)
 
                 address_series = pd.DataFrame(address_series).transpose().values.tolist()[0]
-                if num_of_pages==1:
-                    for i in range(daily_industrial_water_qual.shape[0]):
-                        daily_industrial_water_qual.loc[i, "fltplt":"add_code"] = address_series
+                if num_of_pages == 1:
+                    for j in range(daily_industrial_water_qual.shape[0]):
+                        daily_industrial_water_qual.loc[j, "fltplt":"add_code"] = address_series
                 else:
-                    for i in range(2, num_of_pages + 1):
-                        params["pageNo"] = str(i)
-                        response_df = pd.DataFrame(requests.get(url, params=params).json()["response"]["body"]["items"]["item"])
-                        for i in range(response_df.shape[0]):
-                            response_df.loc[i, "fltplt":"add_code"] = address_series
+                    for j in range(2, num_of_pages + 1):
+                        params["pageNo"] = str(j)
+                        response_df = pd.DataFrame(
+                            requests.get(url, params=params).json()["response"]["body"]["items"]["item"])
+                        for k in range(response_df.shape[0]):
+                            response_df.loc[k, "fltplt":"add_code"] = address_series
                         daily_industrial_water_qual.append(response_df)
 
         except Exception as err:
@@ -102,7 +105,6 @@ fetch_data_task = PythonOperator(
     dag=dag,
 )
 
-
 # 4. upload csv files to GCS
 upload_operator = LocalFilesystemToGCSOperator(
     task_id="upload_daily_industrial_water_info_csv_to_gcs_task",
@@ -113,7 +115,6 @@ upload_operator = LocalFilesystemToGCSOperator(
     gcp_conn_id="google_cloud_conn_id",  # The Conn Id from the Airflow connection setup
     dag=dag,
 )
-
 
 # 5. delete csv file
 # def delete_csv_file():
@@ -170,7 +171,6 @@ execute_query_upsert = BigQueryInsertJobOperator(
     gcp_conn_id="google_cloud_conn_id",
     dag=dag,
 )
-
 
 fetch_data_task >> upload_operator  # >> delete_file_task
 
