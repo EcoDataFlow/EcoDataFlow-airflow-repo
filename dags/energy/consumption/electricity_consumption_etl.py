@@ -130,7 +130,7 @@ gcs_to_bigquery = GCSToBigQueryOperator(
 )
 
 trigger_target_dag = TriggerDagRunOperator(
-    task_id="electricity_consumption_elt",
+    task_id="trigger_target_dag",
     trigger_dag_id="electricity_consumption_elt",  # 트리거하려는 대상 DAG의 ID
     dag=dag,
 )
