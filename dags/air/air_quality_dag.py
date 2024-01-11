@@ -93,12 +93,12 @@ def fetch_data_and_save_csv(**context):
     for col_name in ["so2", "co", "o3", "no2", "pm10", "pm25"]:
         df_selected.loc[df_selected[col_name] == "-", col_name] = ""
     # convert to csv
-    df_selected.to_csv(os.path.abspath("dags/air/output.csv"), index=False)
+    df_selected.to_csv(os.path.abspath("air_output.csv"), index=False)
 
 
 # Function to delete the CSV file
 def delete_csv_file():
-    file_path = os.path.abspath("dags/air/output.csv")
+    file_path = os.path.abspath("air_output.csv")
     if os.path.exists(file_path):
         os.remove(file_path)
     else:
@@ -129,7 +129,7 @@ fetch_data_task = PythonOperator(
 
 upload_operator = LocalFilesystemToGCSOperator(
     task_id="upload_csv_to_gcs_task",
-    src=os.path.abspath("dags/air/output.csv"),
+    src=os.path.abspath("air_output.csv"),
     dst="{{ var.value.aqi_gcs_file_path }}",
     bucket="data-lake-storage",
     gcp_conn_id="google_cloud_conn_id",  # The Conn Id from the Airflow connection setup
