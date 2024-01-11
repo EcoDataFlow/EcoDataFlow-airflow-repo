@@ -6,6 +6,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 
 
 def process_data():
@@ -128,4 +129,11 @@ gcs_to_bigquery = GCSToBigQueryOperator(
     dag=dag,
 )
 
+trigger_target_dag = TriggerDagRunOperator(
+    task_id="electricity_consumption_elt",
+    trigger_dag_id="electricity_consumption_elt",  # 트리거하려는 대상 DAG의 ID
+    dag=dag,
+)
+
 process_data >> upload_to_gcs >> create_table_if_not_exist >> gcs_to_bigquery
+gcs_to_bigquery >> trigger_target_dag
