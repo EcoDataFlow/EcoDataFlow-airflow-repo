@@ -89,12 +89,12 @@ def fetch_data_and_save_csv(**context):
     formatted_path = f"water/hourly/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
     Variable.set("gcs_file_path", formatted_path)
 
-    df_selected.to_csv("dags/water/output.csv", index=False)
+    df_selected.to_csv(os.path.abspath("water_output.csv"), index=False)
 
 
 # Function to delete the CSV file
 def delete_csv_file():
-    file_path = "dags/water/output.csv"
+    file_path = os.path.abspath("water_output.csv")
     if os.path.exists(file_path):
         os.remove(file_path)
     else:
@@ -128,7 +128,7 @@ fetch_data_task = PythonOperator(
 
 upload_operator = LocalFilesystemToGCSOperator(
     task_id="upload_csv_to_gcs_task",
-    src="dags/water/output.csv",
+    src=os.path.abspath("water_output.csv"),
     dst="{{ var.value.gcs_file_path }}",
     bucket="data-lake-storage",
     gcp_conn_id="google_cloud_conn_id",  # The Conn Id from the Airflow connection setup
