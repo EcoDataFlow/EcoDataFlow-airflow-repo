@@ -15,6 +15,16 @@ import os
 import pendulum
 
 
+def convert_date_format(date_str):
+    if str(date_str)[8:] == "24":
+        datetime_obj = datetime.strptime(str(date_str - 1), "%Y%m%d%H") + timedelta(
+            hours=1
+        )
+    else:
+        datetime_obj = datetime.strptime(str(date_str), "%Y%m%d%H")
+    return datetime_obj.strftime("%Y-%m-%d %H:%M")
+
+
 def fetch_data_and_save_csv(**context):
     # Convert UTC to Korea Timezone
     utc_datetime = context["data_interval_end"]
@@ -69,11 +79,17 @@ def fetch_data_and_save_csv(**context):
 
     df_selected.rename(columns=new_column_names, inplace=True)
 
+    # change value ('점검중' 등 null로 변경해야 하는 값)
+    for col_name in ["cl", "pH", "tb"]:
+        df_selected.loc[df_selected[col_name] == "점검중", col_name] = ""
+
+    df_selected["datetime"] = df_selected["datetime"].apply(convert_date_format)
     # convert to csv
-    df_selected.to_csv("dags/water/output.csv", index=False)
 
     formatted_path = f"water/hourly/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
     Variable.set("gcs_file_path", formatted_path)
+
+    df_selected.to_csv("dags/water/output.csv", index=False)
 
 
 # Function to delete the CSV file
@@ -87,7 +103,6 @@ def delete_csv_file():
 
 default_args = {
     "owner": "airflow",
-    "start_date": datetime(2024, 1, 1),
     "retries": 3,
     "retry_delay": timedelta(minutes=1),
 }
@@ -96,7 +111,9 @@ default_args = {
 dag = DAG(
     "hourly_water_pollutants_etl",
     default_args=default_args,
-    catchup=False,
+    start_date=datetime(2024, 1, 9),
+    catchup=True,
+    max_active_runs=1,
     schedule="20 * * * *",
     tags=["gcs"],
 )
