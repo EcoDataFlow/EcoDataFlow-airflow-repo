@@ -1,12 +1,19 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+# from datetime import timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator  # 에러 시 python_operator로 변경 후 실행
 from airflow.models import Variable
-from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
-from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
+from airflow.providers.google.cloud.transfers.local_to_gcs import (
+    LocalFilesystemToGCSOperator,
+)
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
+    GCSToBigQueryOperator,
+)
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 
-import requests, pendulum, os
+import requests
+import pendulum
+import os
 import pandas as pd
 
 # 1. default
@@ -35,10 +42,19 @@ def convert_df_to_csv(daily_industrial_water_qual):
         daily_industrial_water_qual.pop("item8")
         daily_industrial_water_qual.pop("item10")
         daily_industrial_water_qual.rename(
-            columns={"item1": "temperature", "item3": "pH", "item5": "NTU", "item7": "electrical_conductivity",
-                     "item9": "alkalinity"}, inplace=True)
+            columns={
+                "item1": "temperature",
+                "item3": "pH",
+                "item5": "NTU",
+                "item7": "electrical_conductivity",
+                "item9": "alkalinity",
+            },
+            inplace=True,
+        )
         # daily_industrial_water_qual.to_csv("/Users/wonkyungkim/Documents/pythondev/EcoDataFlow-airflow-repo/dags/data/industrial_water/output.csv", index=False)  # for local unit test
-        daily_industrial_water_qual.to_csv("dags/data/industrial_water/output.csv", index=False, encoding='utf-8')
+        daily_industrial_water_qual.to_csv(
+            "dags/data/industrial_water/output.csv", index=False, encoding="utf-8"
+        )
 
 
 # def preprocess_then_append_to_initial_df(initial_df, operand_df):
@@ -48,7 +64,9 @@ def convert_df_to_csv(daily_industrial_water_qual):
 def get_industrial_water_quality_infos(**context):
     utc_datetime = context["data_interval_end"]
     current_datetime = pendulum.instance(utc_datetime).in_tz("Asia/Seoul")
-    formatted_path = f"water/daily_industrial/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
+    formatted_path = (
+        f"water/daily_industrial/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
+    )
     Variable.set("diw_gcs_file_path", formatted_path)
 
     url = "http://apis.data.go.kr/B500001/waterways/wdr/dailindwater/dailindwaterlist"
@@ -63,7 +81,9 @@ def get_industrial_water_quality_infos(**context):
 
     daily_industrial_water_qual = []
     # water_plants_info = pd.read_csv("/Users/wonkyungkim/Documents/pythondev/EcoDataFlow-airflow-repo/dags/water/industrial/new_water_plant_addresses.csv")
-    water_plants_info = pd.read_csv("dags/data/industrial_water/new_water_plant_addresses.csv")
+    water_plants_info = pd.read_csv(
+        "dags/data/industrial_water/new_water_plant_addresses.csv"
+    )
     for i in range(water_plants_info.shape[0]):
         address_series = water_plants_info.iloc[i]
         params["fcode"] = address_series["fltplt"]
@@ -78,15 +98,22 @@ def get_industrial_water_quality_infos(**context):
                 new_columns.extend(["fltplt", "fltpltnm", "address", "add_code"])
                 daily_industrial_water_qual = pd.DataFrame(before, columns=new_columns)
 
-                address_series = pd.DataFrame(address_series).transpose().values.tolist()[0]
+                address_series = (
+                    pd.DataFrame(address_series).transpose().values.tolist()[0]
+                )
                 if num_of_pages == 1:
                     for j in range(daily_industrial_water_qual.shape[0]):
-                        daily_industrial_water_qual.loc[j, "fltplt":"add_code"] = address_series
+                        daily_industrial_water_qual.loc[
+                            j, "fltplt":"add_code"
+                        ] = address_series
                 else:
                     for j in range(2, num_of_pages + 1):
                         params["pageNo"] = str(j)
                         response_df = pd.DataFrame(
-                            requests.get(url, params=params).json()["response"]["body"]["items"]["item"])
+                            requests.get(url, params=params).json()["response"]["body"][
+                                "items"
+                            ]["item"]
+                        )
                         for k in range(response_df.shape[0]):
                             response_df.loc[k, "fltplt":"add_code"] = address_series
                         daily_industrial_water_qual.append(response_df)
