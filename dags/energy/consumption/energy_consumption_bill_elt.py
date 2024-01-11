@@ -80,7 +80,7 @@ dag = DAG(
     "energy_consumption_bill_elt",
     default_args=default_args,
     catchup=False,
-    schedule="@monthly",
+    schedule_interval=None,
 )
 
 process_data = PythonOperator(
