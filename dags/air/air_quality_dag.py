@@ -90,6 +90,8 @@ def fetch_data_and_save_csv(**context):
     }
     df_selected["metro"] = df_selected["metro"].map(new_metro_values)
 
+    for col_name in ["so2", "co", "o3", "no2", "pm10", "pm25"]:
+        df_selected.loc[df_selected[col_name] == "-", col_name] = ""
     # convert to csv
     df_selected.to_csv("dags/air/output.csv", index=False)
 
