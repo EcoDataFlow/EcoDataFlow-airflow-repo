@@ -72,7 +72,7 @@ def process_data(**kwargs):
 
 default_args = {
     "owner": "airflow",
-    "start_date": datetime(2024, 1, 2),
+    "start_date": datetime(2024, 1, 10),
     "retries": 1,
 }
 
