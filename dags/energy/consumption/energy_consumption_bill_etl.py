@@ -45,26 +45,41 @@ def process_data(**kwargs):
 
             for code in region_codes.법정동코드:
                 params = {'serviceKey': 'IfMicP9ax2V2RmsEiy8nE8UW0OuO4zyv/DINJE/x6H5FVPTFKAFjM5scKDPGlgu9m05/ygawZ9h3egOzpH7usw==', 'sigunguCode': code, 'searchDate': f'{year}{month:02d}'}
-                response = requests.get(url, params=params)
 
-                # XML 응답 파싱
-                root = ET.fromstring(response.content)
-                for item in root.findall('.//item'):
-                    electricity = item.find('elect').text if item.find('elect') is not None else None
-                    heat = item.find('heat').text if item.find('heat') is not None else None
-                    water_cool = item.find('waterCool').text if item.find('waterCool') is not None else None
-                    water_hot = item.find('waterHot').text if item.find('waterHot') is not None else None
+                try:
+                    response = requests.get(url, params=params)
+                    response.raise_for_status()  # 응답 상태 확인
 
-                    # 임시 데이터프레임 생성 및 병합
-                    temp_df = pd.DataFrame([{
-                        'year_month': f'{year}{month:02d}',
-                        'district_code': code,
-                        'electricity': electricity,
-                        'heat': heat,
-                        'water_cool': water_cool,
-                        'water_hot': water_hot
-                    }])
-                    energy_consumption_bill = pd.concat([energy_consumption_bill, temp_df], ignore_index=True)
+                    if response.headers['Content-Type'] != 'application/xml':
+                        print('year, month, code, 응답이 XML 형식이 아닙니다.')
+                        continue  # XML이 아니면 건너뛰기
+
+                    # XML 응답 파싱
+                    root = ET.fromstring(response.content)
+                    for item in root.findall('.//item'):
+                        electricity = item.find('elect').text if item.find('elect') is not None else None
+                        heat = item.find('heat').text if item.find('heat') is not None else None
+                        water_cool = item.find('waterCool').text if item.find('waterCool') is not None else None
+                        water_hot = item.find('waterHot').text if item.find('waterHot') is not None else None
+
+                        # 임시 데이터프레임 생성 및 병합
+                        temp_df = pd.DataFrame([{
+                            'year_month': f'{year}{month:02d}',
+                            'district_code': code,
+                            'electricity': electricity,
+                            'heat': heat,
+                            'water_cool': water_cool,
+                            'water_hot': water_hot
+                        }])
+                        energy_consumption_bill = pd.concat([energy_consumption_bill, temp_df], ignore_index=True)
+
+                except requests.exceptions.HTTPError as http_err:
+                    print(year, month, code, f'HTTP 에러 발생: {http_err}')  # HTTP 에러 출력
+                except ET.ParseError as parse_err:
+                    print(year, month, code, f'XML 파싱 에러 발생: {parse_err}')  # 파싱 에러 출력
+                except Exception as err:
+                    print(year, month, code, f'기타 에러 발생: {err}')  # 기타 예외 처리
+
             print("checkpoint", year, month)
     print(energy_consumption_bill)
     energy_consumption_bill.to_csv("dags/data/energy_consumption_bill.csv", index=False)
@@ -74,7 +89,7 @@ def process_data(**kwargs):
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2024, 1, 1),
-    "retries": 1,
+    "retries": 2,
 }
 
 dag = DAG(
