@@ -8,7 +8,6 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
 
-
 BUCKET_NAME = "data-lake-storage"
 
 
@@ -67,7 +66,7 @@ dag = DAG(
     dag_id="solar_energy_generation_l",
     default_args=default_args,
     description="api_data_to_gcs",
-    schedule_interval="None",
+    schedule_interval=None,
     catchup=False,
 )
 
