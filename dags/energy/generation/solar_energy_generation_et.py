@@ -127,7 +127,7 @@ default_args = {
 
 
 dag = DAG(
-    dag_id="api_data_extract",
+    dag_id="solar_energy_generation_et",
     default_args=default_args,
     description="api_data_extract",
     schedule_interval="@daily",
