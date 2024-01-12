@@ -31,8 +31,8 @@ CTAS_current_water_pol = BigQueryInsertJobOperator(
         "query": {
             "query": """
             CREATE OR REPLACE TABLE analytics.current_hourly_water_pollutants_by_metro AS
-            SELECT I.ISO_3166_2_CODE, D.* FROM
-            (
+            SELECT I.ISO_3166_2_CODE, D.*
+            FROM(
             SELECT datetime, SPLIT(facultyAddr, ' ')[OFFSET(0)] as metro,  facultyName, cl, pH, tb
             FROM `focus-empire-410115.raw_data.hourly_water_pollutants_tmp`
             ) as D
