@@ -9,6 +9,7 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
     GCSToBigQueryOperator,
 )
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 import requests
 import pandas as pd
 import os
@@ -115,7 +116,7 @@ dag = DAG(
     catchup=True,
     max_active_runs=1,
     schedule="20 * * * *",
-    tags=["gcs"],
+    tags=["water_pollutant"],
 )
 
 fetch_data_task = PythonOperator(
@@ -181,9 +182,16 @@ execute_query_upsert = BigQueryInsertJobOperator(
     dag=dag,
 )
 
+trigger_target_dag = TriggerDagRunOperator(
+    task_id="trigger_target_dag",
+    trigger_dag_id="hourly_water_pollutants_elt",
+    dag=dag,
+)
 
 fetch_data_task >> upload_operator >> delete_file_task
 
 upload_operator >> load_csv_to_bq_task
 
 load_csv_to_bq_task >> create_table_if_not_exist >> execute_query_upsert
+
+execute_query_upsert >> trigger_target_dag

@@ -117,7 +117,7 @@ dag = DAG(
     "air_quality_etl",
     default_args=default_args,
     catchup=False,
-    schedule="30 * * * *",
+    schedule_interval="30 * * * *",
     tags=["aqi"],
 )
 
