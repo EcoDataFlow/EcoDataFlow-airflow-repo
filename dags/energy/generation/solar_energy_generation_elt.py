@@ -15,7 +15,7 @@ dag = DAG(
     dag_id="solar_energy_generation_elt",
     default_args=default_args,
     description="bigquery_to_bigquery",
-    schedule_interval="@daily",
+    schedule_interval="None",
     catchup=False,
 )
 

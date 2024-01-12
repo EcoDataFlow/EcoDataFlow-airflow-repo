@@ -67,7 +67,7 @@ dag = DAG(
     dag_id="solar_energy_generation_l",
     default_args=default_args,
     description="api_data_to_gcs",
-    schedule_interval="@daily",
+    schedule_interval="None",
     catchup=False,
 )
 
