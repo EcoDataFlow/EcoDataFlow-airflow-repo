@@ -8,6 +8,7 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.dagrun_operator import TriggerDagRunOperator
 
+
 BUCKET_NAME = "data-lake-storage"
 
 
@@ -89,7 +90,7 @@ to_bigquery_task = PythonOperator(
 
 trigger_target_dag_task = TriggerDagRunOperator(
     task_id="trigger_target_dag",
-    trigger_dag_id="bigquery_elt_dag",  # 트리거하려는 대상 DAG의 ID
+    trigger_dag_id="solar_energy_generation_elt",  # 트리거하려는 대상 DAG의 ID
     dag=dag,
 )
 
