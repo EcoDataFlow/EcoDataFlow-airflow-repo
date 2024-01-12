@@ -1,5 +1,4 @@
-from datetime import datetime
-# from datetime import timedelta
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator  # 에러 시 python_operator로 변경 후 실행
 from airflow.models import Variable
@@ -17,7 +16,7 @@ import os
 import pandas as pd
 
 # 1. default
-default_args = {
+default_args = {  # schedule_interval: 정기적 실행. 매일 통계 계산해야 하는 경우 이게 좋다함.
     "owner": "airflow",
     "start_date": datetime(2024, 1, 1),
     "retries": 0,
@@ -64,9 +63,8 @@ def convert_df_to_csv(daily_industrial_water_qual):
 def get_industrial_water_quality_infos(**context):
     utc_datetime = context["data_interval_end"]
     current_datetime = pendulum.instance(utc_datetime).in_tz("Asia/Seoul")
-    formatted_path = (
-        f"water/daily_industrial/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
-    )
+    # formatted_path = f"water/daily_industrial/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
+    formatted_path = "water/daily_industrial/output.csv"
     Variable.set("diw_gcs_file_path", formatted_path)
 
     url = "http://apis.data.go.kr/B500001/waterways/wdr/dailindwater/dailindwaterlist"
@@ -75,8 +73,9 @@ def get_industrial_water_quality_infos(**context):
         "numOfRows": "500",
         "pageNo": "1",
         "_type": "json",
-        "stdt": "2023-12-01",
-        "eddt": "2023-12-03",
+        # "stdt": "2023-12-01",
+        "stdt": current_datetime.subtract(months=6).strftime('%Y-%m-%d'),
+        "eddt": current_datetime.strftime('%Y-%m-%d'),
     }
 
     daily_industrial_water_qual = []
