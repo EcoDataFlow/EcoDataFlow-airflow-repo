@@ -31,7 +31,7 @@ CTAS_total_aqi = BigQueryInsertJobOperator(
         "query": {
             "query": """
             CREATE OR REPLACE TABLE analytics.total_air_quality_by_metro AS
-            SELECT D.*, I.ISO_3166_2_CODE 
+            SELECT D.*, I.ISO_3166_2_CODE
             FROM(
                 SELECT *
                 FROM `raw_data.air_quality`
