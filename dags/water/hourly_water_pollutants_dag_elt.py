@@ -33,8 +33,8 @@ CTAS_current_water_pol = BigQueryInsertJobOperator(
             CREATE OR REPLACE TABLE analytics.current_hourly_water_pollutants_by_metro AS
             SELECT I.ISO_3166_2_CODE, D.* FROM
             (
-            SELECT datetime, SPLIT(facultyAddr, ' ')[OFFSET(0)] as metro,  facultyName, cl, pH, tb 
-            FROM `focus-empire-410115.raw_data.hourly_water_pollutants_tmp` 
+            SELECT datetime, SPLIT(facultyAddr, ' ')[OFFSET(0)] as metro,  facultyName, cl, pH, tb
+            FROM `focus-empire-410115.raw_data.hourly_water_pollutants_tmp`
             ) as D
             JOIN `raw_data.ISO_3166_2_KR` as I
             ON D.metro = I.metro;
@@ -52,9 +52,9 @@ CTAS_total_water_pol = BigQueryInsertJobOperator(
         "query": {
             "query": """
             CREATE OR REPLACE TABLE analytics.total_hourly_water_pollutants_by_metro AS
-            SELECT D.*, I.ISO_3166_2_CODE 
+            SELECT D.*, I.ISO_3166_2_CODE
             FROM(
-                SELECT datetime, SPLIT(facultyAddr, ' ')[OFFSET(0)] as metro,  facultyName, cl, pH, tb 
+                SELECT datetime, SPLIT(facultyAddr, ' ')[OFFSET(0)] as metro,  facultyName, cl, pH, tb
                 FROM `raw_data.hourly_water_pollutants`
                 WHERE DATE(datetime) > DATE_SUB(CURRENT_DATE("Asia/Seoul"), INTERVAL 7 DAY)
             ) as D
