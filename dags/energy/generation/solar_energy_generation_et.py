@@ -3,19 +3,14 @@ import pandas as pd
 import os
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.contrib.operators.file_to_gcs import LocalFilesystemToGCSOperator
-from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
-    GCSToBigQueryOperator,
-)
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 
 BUCKET_NAME = "data-lake-storage"
 
 
 def get_formatted_execution_date(**kwargs):
-    return (kwargs["execution_date"] - timedelta(days=28)).strftime("%Y%m%d")
+    return (kwargs["execution_date"] - timedelta(days=29)).strftime("%Y%m%d")
 
 
 def get_data(**kwargs):
@@ -33,7 +28,7 @@ def get_data(**kwargs):
 
     response = requests.get(url, params=params)
     items = response.json()["response"]["body"]["items"]["item"]
-    csv_filename = f"solar_energy_generation_{execution_date}.csv"
+    csv_filename = "solar_energy_generation.csv"
 
     if not response.json():
         dag.pause()
@@ -44,9 +39,8 @@ def get_data(**kwargs):
 
 def csv_transform_region_code(**kwargs):
     # 현재 실행되는 파일의 경로
-    execution_date = get_formatted_execution_date(**kwargs)
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    file_name = f"solar_energy_generation_{execution_date}.csv"
+    file_name = "solar_energy_generation.csv"
     file_path = os.path.join(current_directory, file_name)
 
     df = pd.read_csv(file_path)
@@ -99,9 +93,8 @@ def csv_transform_region_code(**kwargs):
 
 
 def csv_transform_datetime(**kwargs):
-    execution_date = get_formatted_execution_date(**kwargs)
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    file_name = f"solar_energy_generation_{execution_date}.csv"
+    file_name = "solar_energy_generation.csv"
     file_path = os.path.join(current_directory, file_name)
     df = pd.read_csv(file_path)
     df = df.drop(columns=["rn"])
@@ -162,5 +155,13 @@ csv_transform_datetime_task = PythonOperator(
     dag=dag,
 )
 
+trigger_target_dag_task = TriggerDagRunOperator(
+    task_id="trigger_target_dag",
+    trigger_dag_id="api_gcs_to_bigquery",  # 트리거하려는 대상 DAG의 ID
+    dag=dag,
+)
+
 
 api_to_csv >> csv_transform_region_code_task >> csv_transform_datetime_task
+
+csv_transform_datetime_task >> trigger_target_dag_task

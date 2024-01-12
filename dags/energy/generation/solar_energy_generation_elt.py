@@ -1,16 +1,6 @@
-import requests
-import pandas as pd
-import os
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.contrib.operators.file_to_gcs import LocalFilesystemToGCSOperator
-from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
-    GCSToBigQueryOperator,
-)
-from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
-from airflow.sensors.external_task_sensor import ExternalTaskSensor
 
 
 default_args = {
@@ -28,17 +18,6 @@ dag = DAG(
     schedule_interval="@daily",
     catchup=False,
 )
-
-
-# sensor = ExternalTaskSensor(
-#     task_id="wait_for_gcs_update",
-#     external_dag_id="api_data_to_gcs",
-#     external_task_id="gcs_to_bigquery",
-#     start_date=datetime(2023, 12, 15),
-#     execution_date_fn=lambda x: x,
-#     mode="reschedule",
-#     timeout=3600,
-# )
 
 
 query = """
