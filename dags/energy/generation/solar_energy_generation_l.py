@@ -63,7 +63,7 @@ default_args = {
 
 
 dag = DAG(
-    dag_id="api_gcs_to_bigquery",
+    dag_id="solar_energy_generation_l",
     default_args=default_args,
     description="api_data_to_gcs",
     schedule_interval="@daily",

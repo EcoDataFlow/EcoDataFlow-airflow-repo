@@ -12,7 +12,7 @@ default_args = {
 
 
 dag = DAG(
-    dag_id="bigquery_elt_dag",
+    dag_id="solar_energy_generation_elt",
     default_args=default_args,
     description="bigquery_to_bigquery",
     schedule_interval="@daily",
