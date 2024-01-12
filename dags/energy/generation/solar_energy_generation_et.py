@@ -157,7 +157,7 @@ csv_transform_datetime_task = PythonOperator(
 
 trigger_target_dag_task = TriggerDagRunOperator(
     task_id="trigger_target_dag",
-    trigger_dag_id="api_gcs_to_bigquery",  # 트리거하려는 대상 DAG의 ID
+    trigger_dag_id="solar_energy_generation_l",  # 트리거하려는 대상 DAG의 ID
     dag=dag,
 )
 
