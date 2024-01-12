@@ -9,6 +9,7 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
     GCSToBigQueryOperator,
 )
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+from airflow.operators.dagrun_operator import TriggerDagRunOperator
 import requests
 import pandas as pd
 import os
@@ -117,7 +118,7 @@ dag = DAG(
     default_args=default_args,
     catchup=False,
     schedule="30 * * * *",
-    tags=["gcs"],
+    tags=["aqi"],
 )
 
 fetch_data_task = PythonOperator(
@@ -182,9 +183,16 @@ execute_query_upsert = BigQueryInsertJobOperator(
     dag=dag,
 )
 
+trigger_target_dag = TriggerDagRunOperator(
+    task_id="trigger_target_dag",
+    trigger_dag_id="air_quality_elt",  # 트리거하려는 대상 DAG의 ID
+    dag=dag,
+)
 
 fetch_data_task >> upload_operator >> delete_file_task
 
 upload_operator >> load_csv_to_bq_task
 
 load_csv_to_bq_task >> create_table_if_not_exist >> execute_query_upsert
+
+execute_query_upsert >> trigger_target_dag
