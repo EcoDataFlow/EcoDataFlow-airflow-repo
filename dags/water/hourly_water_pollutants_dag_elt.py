@@ -1,6 +1,6 @@
 from datetime import datetime
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 
 import pandas as pd
@@ -15,11 +15,11 @@ dag = DAG(
     "hourly_water_pollutants_elt",
     default_args=default_args,
     catchup=False,
-    schedule_interval=None,
+    schedule=None,
     tags=["water_pollutant"],
 )
 
-check_table_is_valid = DummyOperator(
+check_table_is_valid = EmptyOperator(
     task_id="check_table_is_valid_task",
     dag=dag,
 )
