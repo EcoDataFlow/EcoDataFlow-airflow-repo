@@ -2,6 +2,7 @@ from datetime import datetime
 from airflow import DAG
 import pandas as pd
 import requests
+from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
@@ -19,13 +20,16 @@ def process_data():
     current_year = datetime.now().year
     current_month = datetime.now().month
 
+    # API 키 가져오기
+    electricity_consumption_api_key = Variable.get("electricity_consumption_api_key")
+
     for year in range(2021, current_year + 1):
         for month in range(1, 13):
             if year == current_year and month > current_month:
                 break
 
             for code in metrocode:
-                url = f'https://bigdata.kepco.co.kr/openapi/v1/powerUsage/houseAve.do?year={year}&month={month:02d}&metroCd={code}&apiKey=693nx2eTP7S0KVI83Qlg2gFSLO17g3qhB152EW8R&returnType=json'
+                url = f'https://bigdata.kepco.co.kr/openapi/v1/powerUsage/houseAve.do?year={year}&month={month:02d}&metroCd={code}&apiKey={electricity_consumption_api_key}&returnType=json'
                 response = requests.get(url)
                 response.encoding = 'utf-8'  # 인코딩 설정
 
