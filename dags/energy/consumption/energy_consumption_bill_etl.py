@@ -4,6 +4,8 @@ import pandas as pd
 from io import StringIO
 import xml.etree.ElementTree as ET
 import requests
+import time
+from airflow.models import Variable
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
@@ -37,48 +39,63 @@ def process_data(**kwargs):
     # XCom을 통해 데이터 가져오기
     file_path = kwargs['ti'].xcom_pull(task_ids='read_csv_from_gcs')
     region_codes = pd.read_csv(file_path)
+
+    # API 키 가져오기
+    consumption_bill_api_key = Variable.get("consumption_bill_api_key")
+
     # 데이터 처리 작업
     energy_consumption_bill = pd.DataFrame(columns=['year_month', 'district_code', 'electricity', 'heat', 'water_cool', 'water_hot'])
     url = 'http://apis.data.go.kr/1611000/ApHusEnergyUseInfoOfferService/getSignguAvrgEnergyUseAmountInfoSearch'
+
     for year in range(2023, 2024):
         for month in range(1, 13):
 
             for code in region_codes.법정동코드:
-                params = {'serviceKey': 'IfMicP9ax2V2RmsEiy8nE8UW0OuO4zyv/DINJE/x6H5FVPTFKAFjM5scKDPGlgu9m05/ygawZ9h3egOzpH7usw==', 'sigunguCode': code, 'searchDate': f'{year}{month:02d}'}
+                params = {'serviceKey': consumption_bill_api_key, 'sigunguCode': code, 'searchDate': f'{year}{month:02d}'}
+                retry_count = 3
 
-                try:
-                    response = requests.get(url, params=params)
-                    response.raise_for_status()  # 응답 상태 확인
+                while retry_count > 0:
+                    try:
+                        response = requests.get(url, params=params)
+                        print(year, month, code, response.text)
+                        response.raise_for_status()  # 응답 상태 확인
 
-                    if response.headers['Content-Type'] != 'application/xml':
-                        print(year, month, code, '응답이 XML 형식이 아닙니다.')
-                        continue  # XML이 아니면 건너뛰기
+                        if response.headers['Content-Type'] != 'application/xml':
+                            print(year, month, code, '응답이 XML 형식이 아닙니다.')
+                            continue  # XML이 아니면 건너뛰기
 
-                    # XML 응답 파싱
-                    root = ET.fromstring(response.content)
-                    for item in root.findall('.//item'):
-                        electricity = item.find('elect').text if item.find('elect') is not None else None
-                        heat = item.find('heat').text if item.find('heat') is not None else None
-                        water_cool = item.find('waterCool').text if item.find('waterCool') is not None else None
-                        water_hot = item.find('waterHot').text if item.find('waterHot') is not None else None
+                        # XML 응답 파싱
+                        root = ET.fromstring(response.content)
+                        for item in root.findall('.//item'):
+                            electricity = item.find('elect').text if item.find('elect') is not None else None
+                            heat = item.find('heat').text if item.find('heat') is not None else None
+                            water_cool = item.find('waterCool').text if item.find('waterCool') is not None else None
+                            water_hot = item.find('waterHot').text if item.find('waterHot') is not None else None
 
-                        # 임시 데이터프레임 생성 및 병합
-                        temp_df = pd.DataFrame([{
-                            'year_month': f'{year}{month:02d}',
-                            'district_code': code,
-                            'electricity': electricity,
-                            'heat': heat,
-                            'water_cool': water_cool,
-                            'water_hot': water_hot
-                        }])
-                        energy_consumption_bill = pd.concat([energy_consumption_bill, temp_df], ignore_index=True)
+                            # 임시 데이터프레임 생성 및 병합
+                            temp_df = pd.DataFrame([{
+                                'year_month': f'{year}{month:02d}',
+                                'district_code': code,
+                                'electricity': electricity,
+                                'heat': heat,
+                                'water_cool': water_cool,
+                                'water_hot': water_hot
+                            }])
+                            energy_consumption_bill = pd.concat([energy_consumption_bill, temp_df], ignore_index=True)
 
-                except requests.exceptions.HTTPError as http_err:
-                    print(year, month, code, f'HTTP 에러 발생: {http_err}')  # HTTP 에러 출력
-                except ET.ParseError as parse_err:
-                    print(year, month, code, f'XML 파싱 에러 발생: {parse_err}')  # 파싱 에러 출력
-                except Exception as err:
-                    print(year, month, code, f'기타 에러 발생: {err}')  # 기타 예외 처리
+                    except requests.exceptions.HTTPError as http_err:
+                        print(year, month, code, f'HTTP 에러 발생: {http_err}')  # HTTP 에러 출력
+                    except ET.ParseError as parse_err:
+                        print(year, month, code, f'XML 파싱 에러 발생: {parse_err}')  # 파싱 에러 출력
+                    except Exception as err:
+                        print(year, month, code, f'기타 에러 발생: {err}')  # 기타 예외 처리
+
+                    else:
+                        break  # 예외가 발생하지 않으면 루프를 종료
+
+                    # 예외 발생 시 1초 대기 후 다시 시도
+                    time.sleep(1)
+                    retry_count -= 1
 
             print("checkpoint", year, month)
     print(energy_consumption_bill)
