@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.models import Variable
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import (
     LocalFilesystemToGCSOperator,
 )
@@ -9,7 +9,7 @@ from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
     GCSToBigQueryOperator,
 )
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
-from airflow.operators.dagrun_operator import TriggerDagRunOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 import requests
 import pandas as pd
 import os
@@ -122,7 +122,6 @@ dag = DAG(
 fetch_data_task = PythonOperator(
     task_id="fetch_data_and_save_csv_task",
     python_callable=fetch_data_and_save_csv,
-    provide_context=True,
     dag=dag,
 )
 
