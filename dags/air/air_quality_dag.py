@@ -23,9 +23,10 @@ def fetch_data_and_save_csv(**context):
     formatted_path = f"air/{current_datetime.strftime('%Y-%m-%d_%H')}.csv"
     Variable.set("aqi_gcs_file_path", formatted_path)
 
+    aqi_api_key = Variable.get("aqi_api_key")
     url = "http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty"
     params = {
-        "serviceKey": "9IyndkiMrrzo5eLkP+I/sKhMYeg0jb8hNwqpdPHdeRKS5WuCsdT/bA8urOBesACx9E9cmdhLVs9sDvAFiyVlsA==",
+        "serviceKey": aqi_api_key,
         "returnType": "json",
         "numOfRows": "1000",
         "pageNo": "1",

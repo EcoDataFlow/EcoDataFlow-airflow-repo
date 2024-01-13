@@ -37,9 +37,10 @@ def fetch_data_and_save_csv(**context):
     prev_date = prev_datetime.strftime("%Y-%m-%d")
     prev_time = prev_datetime.strftime("%H")
 
+    hourly_water_pollutants_api_key = Variable.get("hourly_water_pollutants_api_key")
     url = "http://apis.data.go.kr/B500001/rwis/waterQuality/list"
     params = {
-        "serviceKey": "9IyndkiMrrzo5eLkP+I/sKhMYeg0jb8hNwqpdPHdeRKS5WuCsdT/bA8urOBesACx9E9cmdhLVs9sDvAFiyVlsA==",
+        "serviceKey": hourly_water_pollutants_api_key,
         "_type": "json",
         "stDt": prev_date,
         "stTm": prev_time,
