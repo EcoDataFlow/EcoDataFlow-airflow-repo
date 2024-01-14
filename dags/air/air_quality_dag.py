@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
@@ -14,6 +14,18 @@ import requests
 import pandas as pd
 import os
 import pendulum
+
+
+def convert_date_format(date_str):
+    print(date_str)
+    if date_str is None:
+        return None
+    date, time = date_str.split()
+    if time == "24:00":
+        datetime_obj = datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)
+    else:
+        datetime_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
+    return datetime_obj
 
 
 def fetch_data_and_save_csv(**context):
@@ -94,6 +106,9 @@ def fetch_data_and_save_csv(**context):
 
     for col_name in ["so2", "co", "o3", "no2", "pm10", "pm25"]:
         df_selected.loc[df_selected[col_name] == "-", col_name] = ""
+
+    df_selected["datetime"] = df_selected["datetime"].apply(convert_date_format)
+
     # convert to csv
     df_selected.to_csv(os.path.abspath("air_output.csv"), index=False)
 
