@@ -15,19 +15,22 @@ default_args = {
 # start_date=airflow.utils.dates.days_ago(5),
 
 with DAG(
-        dag_id="new_daily_industrial_water_etl",
-        default_args=default_args,
-        catchup=False,
-        schedule="@daily",
-        tags=["daily_industrial_water_etl"],
+    dag_id="new_daily_industrial_water_etl",
+    default_args=default_args,
+    catchup=False,
+    schedule="@daily",
+    tags=["daily_industrial_water_etl"],
 ) as dag:
-    iwt = IndustrialWaterTaskFactory("http://apis.data.go.kr/B500001/waterways/wdr/dailindwater/dailindwaterlist",
-                                     "daily", {
-                                         "item1": "temperature",
-                                         "item3": "pH",
-                                         "item5": "NTU",
-                                         "item7": "electrical_conductivity",
-                                         "item9": "alkalinity",
-                                     }, dag)
+    iwt = IndustrialWaterTaskFactory(
+        "http://apis.data.go.kr/B500001/waterways/wdr/dailindwater/dailindwaterlist",
+        "daily",
+        {
+            "item1": "temperature",
+            "item3": "pH",
+            "item5": "NTU",
+            "item7": "electrical_conductivity",
+            "item9": "alkalinity",
+        },
+        dag,
+    )
     iwt.industrial_water_tasks_generator()
-

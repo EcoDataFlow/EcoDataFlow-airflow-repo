@@ -9,6 +9,7 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 
 import requests
 import pendulum
+
 # import os
 import pandas as pd
 
@@ -20,7 +21,9 @@ class IndustrialWaterTaskFactory:
         self.drop_columns = drop_columns
         self.dag = dag
 
-        self.gcp_conn_id = "google_cloud_conn_id"  # The Conn Id from the Airflow connection setup
+        self.gcp_conn_id = (
+            "google_cloud_conn_id"  # The Conn Id from the Airflow connection setup
+        )
         self.bucket = "data-lake-storage"
         self.local_path = f"dags/data/industrial_water/{self.schedule_interval}.csv"
         self.industrial_water_quality = pd.DataFrame()
@@ -34,8 +37,8 @@ class IndustrialWaterTaskFactory:
             "numOfRows": "500",
             "pageNo": "1",
             "_type": "json",
-            "stdt": current_datetime.subtract(months=8).strftime('%Y-%m-%d'),
-            "eddt": current_datetime.strftime('%Y-%m-%d'),
+            "stdt": current_datetime.subtract(months=8).strftime("%Y-%m-%d"),
+            "eddt": current_datetime.strftime("%Y-%m-%d"),
         }
 
         return params
@@ -69,18 +72,25 @@ class IndustrialWaterTaskFactory:
     def create_full_df(self, params, address_series):
         response = requests.get(self.url, params=params).json()["response"]["body"]
 
-        if len(response["items"]) >= 1:  # 200 OK 받아도 내용물이 없는 경우가 있어 조건문으로 Exception 발생 방지
+        if (
+            len(response["items"]) >= 1
+        ):  # 200 OK 받아도 내용물이 없는 경우가 있어 조건문으로 Exception 발생 방지
             self.define_initial_df(response)
-            num_of_pages, response_df = response["totalCount"] // response["numOfRows"] + 1, []
+            num_of_pages, response_df = (
+                response["totalCount"] // response["numOfRows"] + 1,
+                [],
+            )
             for j in range(1, num_of_pages + 1):
                 if num_of_pages > 1:
                     params["pageNo"] = str(j)
                     response_df = pd.DataFrame(
-                        requests.get(self.url, params=params).json()["response"]["body"][
-                            "items"
-                        ]["item"]
+                        requests.get(self.url, params=params).json()["response"][
+                            "body"
+                        ]["items"]["item"]
                     )
-                params_df = self.industrial_water_quality if num_of_pages == 1 else response_df
+                params_df = (
+                    self.industrial_water_quality if num_of_pages == 1 else response_df
+                )
                 for k in range(params_df.shape[0]):
                     params_df.loc[k, "fltplt":"add_code"] = address_series
                 if num_of_pages > 1:
@@ -88,18 +98,22 @@ class IndustrialWaterTaskFactory:
 
     def convert_df_to_csv(self):
         # 1) delete several columns
-        for i in range(2, 2*(len(self.drop_columns)+1), 2):
+        for i in range(2, 2 * (len(self.drop_columns) + 1), 2):
             self.industrial_water_quality.pop(f"item{i}")
 
         # 2) alter several column names
         self.industrial_water_quality.rename(
             columns=self.drop_columns,
-                inplace=True,
+            inplace=True,
         )
 
         # 3) convert 'mesurede' values to the desired string format
-        self.industrial_water_quality['mesurede'] = pd.to_datetime(self.industrial_water_quality['mesurede'], format='%Y%m%d')
-        self.industrial_water_quality['mesurede'] = self.industrial_water_quality['mesurede'].dt.strftime('%Y-%m-%d')
+        self.industrial_water_quality["mesurede"] = pd.to_datetime(
+            self.industrial_water_quality["mesurede"], format="%Y%m%d"
+        )
+        self.industrial_water_quality["mesurede"] = self.industrial_water_quality[
+            "mesurede"
+        ].dt.strftime("%Y-%m-%d")
 
         # 4) finally create csv
         # self.industrial_water_quality.to_csv("/Users/wonkyungkim/Documents/pythondev/EcoDataFlow-airflow-repo/dags/data/industrial_water/output.csv", index=False)  # for local unit test
