@@ -30,4 +30,3 @@ with DAG(
                                          "item9": "alkalinity",
                                      }, dag)
     iwt.industrial_water_tasks_generator()
-
