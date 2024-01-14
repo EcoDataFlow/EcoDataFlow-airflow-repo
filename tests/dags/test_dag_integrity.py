@@ -8,7 +8,11 @@ from pathlib import Path
 
 DIR = Path(__file__).parents[0]
 DAG_PATH = DIR / ".." / ".." / "dags/"
-DAG_FILES = glob.glob(str(DAG_PATH / '**/*.py'), recursive=True)
+DAG_FILES = glob.glob(str(DAG_PATH / "**/*.py"), recursive=True)
+DAG_FILES = [
+    Path(file).relative_to(DAG_PATH) for file in DAG_FILES if "__init__.py" not in file
+]
+
 
 def import_dag_files(dag_path, dag_file):
     module_name = Path(dag_file).stem
@@ -19,10 +23,10 @@ def import_dag_files(dag_path, dag_file):
         module = importlib.util.module_from_spec(mod_spec)
         mod_spec.loader.exec_module(module)
         return module
-    except (FileNotFoundError, ImportError) as e:
-        print(f"Error importing module {module_name} from {module_path}: {e}. Skipping...")
+    except FileNotFoundError:
+        print(f"File not found: {module_path}. Skipping...")
         return None
-    
+
 
 def test_dag_integrity(airflow_variables, monkeypatch):
     # Airlfow variables monkey patch
