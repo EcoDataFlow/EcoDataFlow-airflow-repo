@@ -16,7 +16,7 @@ def get_formatted_execution_date(**kwargs):
 def get_data(**kwargs):
     execution_date = get_formatted_execution_date(**kwargs)
     url = "http://apis.data.go.kr/B552115/PvAmountByLocHr/getPvAmountByLocHr"
-    api_key = "d/SBgSmKAPxYCabQdjHocN4zvsxvdlL0w15/WgLq8DEjamKHBR7tdh0IbgNBsPvHfBBp+2LPyxtg6freIqxy1g=="
+    api_key = Variable.get("solar_api_key")
 
     params = {
         "serviceKey": api_key,
