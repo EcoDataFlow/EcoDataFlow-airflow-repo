@@ -7,7 +7,7 @@ from datetime import datetime  # , timedelta
 
 # pytest 통과해야 할 때는 이 경로로
 # from dags.water.industrial.industrial_water_task_factory import IndustrialWaterTaskFactory
-from industrial_water_task_factory import IndustrialWaterTaskFactory
+from .industrial_water_task_factory import IndustrialWaterTaskFactory
 
 default_args = {
     "owner": "airflow",
