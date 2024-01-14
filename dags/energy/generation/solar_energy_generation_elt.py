@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 
-
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2023, 12, 15),
