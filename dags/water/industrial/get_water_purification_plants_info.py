@@ -6,7 +6,7 @@ import pandas as pd
 def get_water_purification_plants_info():
     url = "http://apis.data.go.kr/B500001/waterways/wdr/waterfltplt/waterfltpltlist"
     params = {
-        "serviceKey": "1t9qpufmViYr8j1cg/mF7xDiJwF/hryABhn1HPIKmAby1X0JhKhjPjpmdgDpqiffQQdRHWa9iKBpBpcatnP79g==",
+        "serviceKey": "YOUR_SERVICE_KEY",
         "numOfRows": "100",
         "pageNo": "1",
         "_type": "json",
