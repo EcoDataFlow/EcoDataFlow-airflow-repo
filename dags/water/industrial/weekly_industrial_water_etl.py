@@ -3,11 +3,11 @@ from airflow import DAG
 from datetime import datetime  # , timedelta
 
 # 로컬에선 ImportError 떠도 도커 에어플로 실행 환경에선 이렇게 해야만 에러가 없음
-# from water.industrial.industrial_water_task_factory import IndustrialWaterTaskFactory
+from water.industrial.industrial_water_task_factory import IndustrialWaterTaskFactory
 
-# pytest 통과해야 할 때는 이 경로로
+# CI pytest 통과하는 경로는 못찾아냄
 # from dags.water.industrial.industrial_water_task_factory import IndustrialWaterTaskFactory
-from .industrial_water_task_factory import IndustrialWaterTaskFactory
+# from .industrial_water_task_factory import IndustrialWaterTaskFactory
 
 default_args = {
     "owner": "airflow",
