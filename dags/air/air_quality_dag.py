@@ -21,7 +21,7 @@ def convert_date_format(date_str):
     if date_str is None:
         return None
     date, time = date_str.split()
-    if time is "24:00":
+    if time == "24:00":
         datetime_obj = datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)
     else:
         datetime_obj = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
